@@ -2,4 +2,4 @@
 
 ![](https://raw.githubusercontent.com/tkkcc/sehuatang/master/1.png)
 
-支持chrome71+tampermonkey
+support chrome71+tampermonkey

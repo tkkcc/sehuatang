@@ -1,3 +1,16 @@
+// ==UserScript==
+// @name         sehuatang
+// @version      0.0.1
+// @namespace    https://greasyfork.org/users/164996a
+// @author       bilabila
+// @match        https://www.sehuatang.org/404
+// @description  self mode
+// @grant        GM_getValue
+// @grant        GM_setValue
+// @grant        GM_listValues
+// @grant        GM_deleteValue
+// @run-at       document-start
+// ==/UserScript==
 const fid = 36
 const tag = ['handjobjapan', 'fellatiojapan', 'uralesbian', 'spermmania', 'legsjapan']
 const doc = `
