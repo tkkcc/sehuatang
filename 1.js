@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         sehuatang
 // @version      0.0.1
-// @namespace    https://greasyfork.org/users/164996a
 // @author       bilabila
+// @namespace    https://greasyfork.org/users/164996a
 // @match        https://www.sehuatang.org/404
 // @description  self mode
 // @grant        GM_getValue
@@ -23,8 +23,8 @@ const doc = `
       <title>sehuatang</title>
       <style>
         :root {
-          --color1: #444444;
-          --color2: #fefefe;
+          --color1: #444;
+          --color2: #bbb;
         }
         body {
           color: var(--color1);
@@ -42,7 +42,7 @@ const doc = `
         }
         li {
           color: var(--color1);
-          margin: 0 11% 3em;
+          margin: 0 6% 3em;
           padding: 0;
         }
         a {
@@ -58,19 +58,31 @@ const doc = `
         }
         #tag > span {
           display: inline-block;
-          text-decoration: none;
           padding: 0.2em 0.8em;
-          color: #444;
+          color: var(--color1);
           cursor: pointer;
           user-select: none;
         }
         #tag > span.disable {
-          color: #bbb;
+          color: var(--color2);
+        }
+        #clear {
+          position: absolute;
+          top: 1em;
+          right: 1em;
+          padding: 0.2em;
+          cursor: pointer;
+          user-select: none;
+          color: var(--color2);
+        }
+        #clear:hover {
+          color: var(--color1)
         }
       </style>
     </head>
     <body>
-      <div id="app">
+      <div id=app>
+        <span id=clear>☢</span>
         <div id="tag"></div>
         <ul></ul>
       </div>
@@ -87,22 +99,34 @@ const parseHTML = str => {
   tmp.body.innerHTML = str
   return tmp
 }
+const cache = async (k, f) => {
+  if (k === undefined) return
+  let a = GM_getValue(k)
+  if (a) return JSON.parse(a)
+  a = await f(k)
+  GM_setValue(k, JSON.stringify(a))
+  return a
+}
 // get one thread
 const t0 = async tid => {
   const url = `https://www.sehuatang.org/forum.php?mod=viewthread&tid=${tid}`
-  const cache = GM_getValue(tid)
-  if (cache) return JSON.parse(cache)
   let a = await fetch(url)
   a = await a.text()
   a = parseHTML(a)
+  let title = a.querySelector('#thread_subject'),
+    img = a.querySelector('ignore_js_op > img'),
+    magnet = a.querySelector('.blockcode li'),
+    torrent = a.querySelector('.attnm > a')
+  title = title ? title.textContent : ''
+  img = img ? img.getAttribute('zoomfile') : ''
+  magnet = magnet ? magnet.textContent : ''
+  torrent = torrent ? torrent.href : ''
   a = {
-    title: a.querySelector('#thread_subject').textContent,
-    // time: a.querySelector('.authi > em').firstElementChild.textContent,
-    img: a.querySelector('ignore_js_op > img').getAttribute('zoomfile'),
-    magnet: a.querySelector('.blockcode li').textContent,
-    torrent: a.querySelector('.attnm > a').href
+    img,
+    magnet,
+    torrent,
+    title
   }
-  GM_setValue(tid, JSON.stringify(a))
   return a
 }
 // get one page
@@ -114,13 +138,8 @@ const t1 = async (typeid, page) => {
   a = parseHTML(a)
   // check page
   if (a.querySelector('#fd_page_top strong').textContent != page) return
-  a = a.querySelectorAll('#threadlisttableid tr > th > em')
-  a = [...a].map(i => ({
-    type: i.firstElementChild.textContent,
-    tid: /tid=(\d+)/.exec(i.nextElementSibling.href)[1],
-    title: i.nextElementSibling.textContent
-  }))
-  return a.map(i => parseInt(i.tid))
+  a = [...a.querySelectorAll('#threadlisttableid tr > th > em + a')]
+  return a.map(i => parseInt(/tid=(\d+)/.exec(i.href)[1]))
 }
 // get type and id of one fid
 const t2 = async () => {
@@ -172,7 +191,7 @@ class C1 {
   }
   async refresh() {
     const data = this.data
-    const p = data.last()
+    const p = data.last() && data.last().arr[0]
     data.push({
       arr: undefined,
       page: 0
@@ -181,7 +200,7 @@ class C1 {
     a.arr = await this.get(++a.page)
     this.num_one_page = a.arr.length
     this.merge()
-    if (p === undefined || p.arr[0] != data.last().arr[0]) {
+    if (!p || p != data.last().arr[0]) {
       this.save()
       return true
     }
@@ -213,24 +232,15 @@ const li = a => {
         <span>${title}</span>
         <span>
           <a href="${magnet}">magnet</a>
-          <a href="${torrent}">torrent</a>
+          <a href="${torrent}" target="_blank">torrent</a>
         </span>
       </div>
     </li>
   `
 }
-
-const clear = async () => {
-  const cur = GM_info.script.version
-  const pre = GM_getValue('version')
-  if (pre != cur) {
-    for (let key of GM_listValues()) GM_deleteValue(key)
-    GM_setValue('version', cur)
-    GM_setValue('tag', JSON.stringify(tag.slice(0, 3)))
-    window.location.reload()
-  }
-}
-const addTag = t => {
+const addTag = () => {
+  let t = GM_getValue('tag')
+  t = t ? JSON.parse(t) : tag
   const n = document.querySelector('#tag')
   const a = tag
     .map(i => `<span ${t.includes(i) ? '' : 'class=disable'}>${i}</span>`)
@@ -249,18 +259,11 @@ const addTag = t => {
     GM_setValue('tag', JSON.stringify(t))
     window.location.reload()
   })
+  return t
 }
 const main = async () => {
-  await clear()
-  let t = GM_getValue('tag')
-  t = t ? JSON.parse(t) : tag
-  addTag(t)
-  let tag2id = GM_getValue('tag2id')
-  if (tag2id) tag2id = JSON.parse(tag2id)
-  else {
-    tag2id = await t2()
-    GM_setValue('tag2id', JSON.stringify(tag2id))
-  }
+  const tag2id = await cache('tag2id', t2)
+  const t = addTag()
   const v = t.map(i => new C1(tag2id[i]))
   const q = await Promise.all(v.map(async i => await i.nextOne()))
   const next = async () => {
@@ -271,28 +274,42 @@ const main = async () => {
     q[m] = await v[m].nextOne()
     return r
   }
+  let end = false
   const add = async a => {
     if (a === undefined) {
+      if (end) return
+      end = true
       window.onscroll = null
-      const num = ul.querySelectorAll('li').length
-      ul.insertAdjacentHTML('afterend', `<span>total : ${num}</span>`)
-      const total = document.querySelector('ul>span')
+      ul.insertAdjacentHTML('afterend', `<span>total : ${ul.childElementCount}</span>`)
+      const total = document.querySelector('ul+span')
       new MutationObserver(
-        () => (total.innerHTML = `total : ${ul.querySelectorAll('li').length}`)
+        () => (total.innerHTML = `total : ${ul.childElementCount}`)
       ).observe(ul, { childList: true })
       return
     }
-    a = await t0(a)
-    if (a === undefined) return
+    a = await cache(a, t0)
+    if (!a) return
     requestAnimationFrame(() => ul.insertAdjacentHTML('beforeend', li(a)))
   }
-  window.onscroll = async () => {
-    if (3 * window.innerHeight + window.scrollY >= document.body.offsetHeight)
-      add(await next())
-  }
-  for (let i = 0; i < 5; ++i) await add(await next())
+  for (let i = 0; i < 10; ++i) await add(await next())
   const a = await Promise.all(v.map(async i => await i.refresh()))
   if (a.some(i => i)) window.location.reload()
+  let fetching = false
+  window.onscroll = async () => {
+    if (
+      !fetching &&
+      10 * window.innerHeight + window.scrollY >= document.body.offsetHeight
+    ) {
+      fetching = true
+      await add(await next())
+      fetching = false
+    }
+  }
 }
 window.onbeforeunload = () => window.scrollTo(0, 0)
+document.querySelector('#clear').onclick = () => {
+  for (let i of GM_listValues()) GM_deleteValue(i)
+  GM_setValue('tag', JSON.stringify(tag.slice(0, 3)))
+  window.location.reload()
+}
 main()
