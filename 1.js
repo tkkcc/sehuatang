@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         sehuatang
-// @version      0.0.1
+// @version      0.0.2
 // @author       bilabila
 // @namespace    https://greasyfork.org/users/164996a
 // @match        https://www.sehuatang.org/404
@@ -13,83 +13,75 @@
 // ==/UserScript==
 const fid = 36
 const tag = ['handjobjapan', 'fellatiojapan', 'uralesbian', 'spermmania', 'legsjapan']
-const doc = `
-  <!DOCTYPE html>
-  <html lang="en">
-    <head>
-      <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-      <title>sehuatang</title>
-      <style>
-        :root {
-          --color1: #444;
-          --color2: #bbb;
-        }
-        body {
-          color: var(--color1);
-          text-align: center;
-          margin: 0;
-          box-sizing: border-box;
-        }
-        img {
-          width: 100%;
-        }
-        ul {
-          margin: 0;
-          padding: 0;
-          list-style-type: none;
-        }
-        li {
-          color: var(--color1);
-          margin: 0 6% 3em;
-          padding: 0;
-        }
-        a {
-          text-decoration: none;
-        }
-        .title {
-          display: flex;
-          justify-content: space-between;
-          background-color: white;
-        }
-        #tag {
-          margin: 1em 0;
-        }
-        #tag > span {
-          display: inline-block;
-          padding: 0.2em 0.8em;
-          color: var(--color1);
-          cursor: pointer;
-          user-select: none;
-        }
-        #tag > span.disable {
-          color: var(--color2);
-        }
-        #clear {
-          position: absolute;
-          top: 1em;
-          right: 1em;
-          padding: 0.2em;
-          cursor: pointer;
-          user-select: none;
-          color: var(--color2);
-        }
-        #clear:hover {
-          color: var(--color1)
-        }
-      </style>
-    </head>
-    <body>
-      <div id=app>
-        <span id=clear>☢</span>
-        <div id="tag"></div>
-        <ul></ul>
-      </div>
-    </body>
-  </html>
-`
-document.documentElement.innerHTML = doc
+const head = `<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+<title>sehuatang</title>
+<style>
+  :root {
+    --color1: #444;
+    --color2: #bbb;
+  }
+  body {
+    color: var(--color1);
+    text-align: center;
+    margin: 0;
+    box-sizing: border-box;
+  }
+  img {
+    width: 100%;
+  }
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style-type: none;
+  }
+  li {
+    color: var(--color1);
+    margin: 0 6% 3em;
+    padding: 0;
+  }
+  a {
+    text-decoration: none;
+  }
+  .title {
+    display: flex;
+    justify-content: space-between;
+    background-color: white;
+  }
+  #tag {
+    margin: 1em 0;
+  }
+  #tag > span {
+    display: inline-block;
+    padding: 0.2em 0.8em;
+    color: var(--color1);
+    cursor: pointer;
+    user-select: none;
+  }
+  #tag > span.disable {
+    color: var(--color2);
+  }
+  #clear {
+    position: absolute;
+    top: 1em;
+    right: 1em;
+    padding: 0.2em;
+    cursor: pointer;
+    user-select: none;
+    color: var(--color2);
+  }
+  #clear:hover {
+    color: var(--color1)
+  }
+</style>`
+const body=`<div id=app>
+  <span id=clear>☢</span>
+  <div id="tag"></div>
+  <ul></ul>
+</div>`
+document.head.innerHTML = head
+document.body.innerHTML = body
 const ul = document.querySelector('ul')
 Array.prototype.last = function(i = 1) {
   return this[this.length - i]
