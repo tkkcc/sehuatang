@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         sehuatang
-// @version      0.0.2
+// @version      0.0.3
 // @author       bilabila
 // @namespace    https://greasyfork.org/users/164996a
 // @match        https://www.sehuatang.org/404
@@ -12,7 +12,14 @@
 // @run-at       document-start
 // ==/UserScript==
 const fid = 36
-const tag = ['handjobjapan', 'fellatiojapan', 'uralesbian', 'spermmania', 'legsjapan']
+const tag = [
+  '无码破解',
+  'fellatiojapan',
+  'handjobjapan',
+  'uralesbian',
+  'spermmania',
+  'legsjapan'
+]
 const head = `<meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta http-equiv="X-UA-Compatible" content="ie=edge" />
@@ -75,7 +82,7 @@ const head = `<meta charset="UTF-8" />
     color: var(--color1)
   }
 </style>`
-const body=`<div id=app>
+const body = `<div id=app>
   <span id=clear>☢</span>
   <div id="tag"></div>
   <ul></ul>
@@ -106,11 +113,12 @@ const t0 = async tid => {
   a = await a.text()
   a = parseHTML(a)
   let title = a.querySelector('#thread_subject'),
-    img = a.querySelector('ignore_js_op > img'),
+    img = a.querySelectorAll('.pcb img'),
     magnet = a.querySelector('.blockcode li'),
     torrent = a.querySelector('.attnm > a')
+
   title = title ? title.textContent : ''
-  img = img ? img.getAttribute('zoomfile') : ''
+  img = img ? [...img].map(i => i.getAttribute('file')).filter(i => i) : []
   magnet = magnet ? magnet.textContent : ''
   torrent = torrent ? torrent.href : ''
   a = {
@@ -219,7 +227,7 @@ const li = a => {
   const { title, img, magnet, torrent } = a
   return `
     <li>
-      <img src="${img}" />
+      ${img.map(i => `<img src="${i}"/>`).join('')}
       <div class="title">
         <span>${title}</span>
         <span>
