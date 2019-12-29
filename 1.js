@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         sehuatang
-// @version      0.0.3
+// @version      0.0.4
 // @author       bilabila
 // @namespace    https://greasyfork.org/users/164996a
 // @match        https://www.sehuatang.org/404
@@ -143,12 +143,17 @@ const t1 = async (typeid, page) => {
 }
 // get type and id of one fid
 const t2 = async () => {
-  let a = await fetch(`https://www.sehuatang.org/forum.php?mod=forumdisplay&fid=${fid}`)
+  let a = await fetch(
+    `https://www.sehuatang.org/forum.php?mod=forumdisplay&fid=${fid}`
+  )
   a = await a.text()
   a = parseHTML(a)
   a = a.querySelectorAll('#thread_types > li:not([id]) > a')
+  a = [...a].filter(i => i.firstChild)
   const b = {}
-  ;[...a].forEach(i => (b[i.firstChild.textContent] = /typeid=(\d+)/.exec(i.href)[1]))
+  ;[...a].forEach(
+    i => (b[i.firstChild.textContent] = /typeid=(\d+)/.exec(i.href)[1])
+  )
   return b
 }
 class C1 {
@@ -186,7 +191,8 @@ class C1 {
     for (; i < pa.length && pa[i] >= cal; ++i) {}
     for (; i < pa.length; ++i) ca.push(pa[i])
     p.arr = ca
-    if (p.page !== -1) p.page = (c.page + (ca.length - calen) / this.num_one_page) >> 0
+    if (p.page !== -1)
+      p.page = (c.page + (ca.length - calen) / this.num_one_page) >> 0
     data.pop()
   }
   async refresh() {
@@ -268,7 +274,8 @@ const main = async () => {
   const q = await Promise.all(v.map(async i => await i.nextOne()))
   const next = async () => {
     let m = 0
-    for (let i = 1; i < q.length; ++i) if (q[i] !== undefined && q[i] > q[m]) m = i
+    for (let i = 1; i < q.length; ++i)
+      if (q[i] !== undefined && q[i] > q[m]) m = i
     if (q[m] === undefined) return
     const r = q[m]
     q[m] = await v[m].nextOne()
@@ -280,7 +287,10 @@ const main = async () => {
       if (end) return
       end = true
       window.onscroll = null
-      ul.insertAdjacentHTML('afterend', `<span>total : ${ul.childElementCount}</span>`)
+      ul.insertAdjacentHTML(
+        'afterend',
+        `<span>total : ${ul.childElementCount}</span>`
+      )
       const total = document.querySelector('ul+span')
       new MutationObserver(
         () => (total.innerHTML = `total : ${ul.childElementCount}`)
@@ -291,7 +301,7 @@ const main = async () => {
     if (!a) return
     requestAnimationFrame(() => ul.insertAdjacentHTML('beforeend', li(a)))
   }
-  for (let i = 0; i < 10; ++i) await add(await next())
+  for (let i = 0; i < 3; ++i) await add(await next())
   const a = await Promise.all(v.map(async i => await i.refresh()))
   if (a.some(i => i)) window.location.reload()
   let fetching = false
@@ -309,7 +319,7 @@ const main = async () => {
 window.onbeforeunload = () => window.scrollTo(0, 0)
 document.querySelector('#clear').onclick = () => {
   for (let i of GM_listValues()) GM_deleteValue(i)
-  GM_setValue('tag', JSON.stringify(tag.slice(0, 3)))
+  GM_setValue('tag', JSON.stringify(tag.slice(1, 3)))
   window.location.reload()
 }
 main()
