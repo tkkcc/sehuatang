@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         sehuatang
-// @version      0.0.4
+// @version      0.0.5
 // @author       bilabila
 // @namespace    https://greasyfork.org/users/164996a
 // @match        https://www.sehuatang.org/404
@@ -137,7 +137,7 @@ const t1 = async (typeid, page) => {
   a = await a.text()
   a = parseHTML(a)
   // check page
-  if (a.querySelector('#fd_page_top strong').textContent != page) return
+  // if (a.querySelector('#fd_page_top strong').textContent != page) return
   a = [...a.querySelectorAll('#threadlisttableid tr > th > em + a')]
   return a.map(i => parseInt(/tid=(\d+)/.exec(i.href)[1]))
 }
