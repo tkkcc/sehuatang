@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         sehuatang
-// @version      0.0.5
+// @version      0.0.6
 // @author       bilabila
 // @namespace    https://greasyfork.org/users/164996a
 // @match        https://www.sehuatang.org/404
@@ -13,7 +13,6 @@
 // ==/UserScript==
 const fid = 36
 const tag = [
-  '无码破解',
   'fellatiojapan',
   'handjobjapan',
   'uralesbian',
@@ -174,7 +173,9 @@ class C1 {
     if (!b) return (a.page = -1)
     let i = 0
     for (; i < b.length && b[i] >= aal; ++i) {}
-    if (i === b.length) await this.more(a)
+    // end support for long time scroll interval
+    //if (i === b.length) await this.more(a)
+    if (i === b.length) return (a.page = -1)
     for (; i < b.length; ++i) aa.push(b[i])
   }
   merge() {
@@ -316,10 +317,12 @@ const main = async () => {
     }
   }
 }
-window.onbeforeunload = () => window.scrollTo(0, 0)
-document.querySelector('#clear').onclick = () => {
+const init = () => {
   for (let i of GM_listValues()) GM_deleteValue(i)
-  GM_setValue('tag', JSON.stringify(tag.slice(1, 3)))
+  GM_setValue('tag', JSON.stringify([]))
   window.location.reload()
 }
+window.onbeforeunload = () => window.scrollTo(0, 0)
+document.querySelector('#clear').onclick = init
+if (!GM_getValue('tag')) init()
 main()
