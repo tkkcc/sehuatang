@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         sehuatang
-// @version      0.0.6
+// @version      0.0.7
 // @author       bilabila
 // @namespace    https://greasyfork.org/users/164996a
 // @match        https://www.sehuatang.org/404
@@ -11,14 +11,17 @@
 // @grant        GM_deleteValue
 // @run-at       document-start
 // ==/UserScript==
-const fid = 36
-const tag = [
-  'fellatiojapan',
-  'handjobjapan',
-  'uralesbian',
-  'spermmania',
-  'legsjapan'
-]
+const tags = {
+  fellatiojapan: ['亚洲无码原创', 'fellatiojapan'],
+  handjobjapan: ['亚洲无码原创', 'handjobjapan'],
+  uralesbian: ['亚洲无码原创', 'uralesbian'],
+  spermmania: ['亚洲无码原创', 'spermmania'],
+  legsjapan: ['亚洲无码原创', 'legsjapan'],
+  亚洲无码: ['亚洲无码原创', '全部'],
+  亚洲有码: ['亚洲有码原创', '全部'],
+  蚊: ['蚊香社特典版', '全部'],
+  tu: [ '真实自拍','全部'],
+}
 const head = `<meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta http-equiv="X-UA-Compatible" content="ie=edge" />
@@ -89,24 +92,25 @@ const body = `<div id=app>
 document.head.innerHTML = head
 document.body.innerHTML = body
 const ul = document.querySelector('ul')
-Array.prototype.last = function(i = 1) {
+Array.prototype.last = function (i = 1) {
   return this[this.length - i]
 }
-const parseHTML = str => {
+const parseHTML = (str) => {
   const tmp = document.implementation.createHTMLDocument()
   tmp.body.innerHTML = str
   return tmp
 }
-const cache = async (k, f) => {
+const cache = async (k, f, ...args) => {
   if (k === undefined) return
   let a = GM_getValue(k)
   if (a) return JSON.parse(a)
-  a = await f(k)
+  a = await f(...args)
   GM_setValue(k, JSON.stringify(a))
   return a
 }
-// get one thread
-const t0 = async tid => {
+
+// get one post
+const t0 = async (tid) => {
   const url = `https://www.sehuatang.org/forum.php?mod=viewthread&tid=${tid}`
   let a = await fetch(url)
   a = await a.text()
@@ -117,53 +121,73 @@ const t0 = async tid => {
     torrent = a.querySelector('.attnm > a')
 
   title = title ? title.textContent : ''
-  img = img ? [...img].map(i => i.getAttribute('file')).filter(i => i) : []
+  img = img ? [...img].map((i) => i.getAttribute('file')).filter((i) => i) : []
   magnet = magnet ? magnet.textContent : ''
   torrent = torrent ? torrent.href : ''
   a = {
     img,
     magnet,
     torrent,
-    title
+    title,
   }
   return a
 }
 // get one page
-const t1 = async (typeid, page) => {
+const t1 = async (fid, typeid, page) => {
   let a = await fetch(
-    `https://www.sehuatang.org/forum.php?mod=forumdisplay&fid=${fid}&filter=typeid&typeid=${typeid}&page=${page}`
+    `https://www.sehuatang.org/forum.php?mod=forumdisplay&fid=${fid}` +
+      (typeid != '0' ? `&filter=typeid&typeid=${typeid}` : '') +
+      `&page=${page}`
   )
   a = await a.text()
   a = parseHTML(a)
   // check page
   // if (a.querySelector('#fd_page_top strong').textContent != page) return
-  a = [...a.querySelectorAll('#threadlisttableid tr > th > em + a')]
-  return a.map(i => parseInt(/tid=(\d+)/.exec(i.href)[1]))
+  a = [
+    ...a.querySelectorAll('#threadlisttableid tbody[id^=normalthread_] th a[href*=tid]'),
+  ]
+  return a.map((i) => parseInt(/tid=(\d+)/.exec(i.href)[1]))
 }
 // get type and id of one fid
-const t2 = async () => {
-  let a = await fetch(
-    `https://www.sehuatang.org/forum.php?mod=forumdisplay&fid=${fid}`
-  )
+const t2 = async (fid) => {
+  let a = await fetch(`https://www.sehuatang.org/forum.php?mod=forumdisplay&fid=${fid}`)
   a = await a.text()
   a = parseHTML(a)
   a = a.querySelectorAll('#thread_types > li:not([id]) > a')
-  a = [...a].filter(i => i.firstChild)
-  const b = {}
-  ;[...a].forEach(
-    i => (b[i.firstChild.textContent] = /typeid=(\d+)/.exec(i.href)[1])
-  )
+  a = [...a].filter((i) => i.firstChild)
+  const b = { 全部: '0' }
+  ;[...a].forEach((i) => (b[i.firstChild.textContent] = /typeid=(\d+)/.exec(i.href)[1]))
   return b
 }
+// get all fid and name
+const t3 = async () => {
+  const url = `https://www.sehuatang.org/forum.php`
+  let a = await fetch(url)
+  a = await a.text()
+  a = parseHTML(a)
+  let ans = {}
+  for (let b of a.querySelectorAll('a')) {
+    if (b.childElementCount != 0) continue
+    let fid = /(fid=|forum-)(\d+)/.exec(b.href)
+    if (!fid) continue
+    fid = fid[2]
+    let name = b.textContent
+    ans[name] = fid
+  }
+  return ans
+}
+
+const id2key = (...a) => a.join('_')
 class C1 {
-  constructor(typeid) {
+  constructor(fid, typeid) {
     this.num_one_page = Number.MAX_SAFE_INTEGER
-    this.data = JSON.parse(GM_getValue(typeid, '[]'))
+    this.data = JSON.parse(GM_getValue(id2key(fid, typeid), '[]'))
+    this.fid = fid
     this.typeid = typeid
     this.i1 = 0
   }
   async get(page) {
-    return await t1(this.typeid, page)
+    return await t1(this.fid, this.typeid, page)
   }
   async more(a) {
     if (a.page === -1) return
@@ -192,8 +216,7 @@ class C1 {
     for (; i < pa.length && pa[i] >= cal; ++i) {}
     for (; i < pa.length; ++i) ca.push(pa[i])
     p.arr = ca
-    if (p.page !== -1)
-      p.page = (c.page + (ca.length - calen) / this.num_one_page) >> 0
+    if (p.page !== -1) p.page = (c.page + (ca.length - calen) / this.num_one_page) >> 0
     data.pop()
   }
   async refresh() {
@@ -201,13 +224,13 @@ class C1 {
     const p = data.last() && data.last().arr[0]
     data.push({
       arr: undefined,
-      page: 0
+      page: 0,
     })
     const a = data.last()
     a.arr = await this.get(++a.page)
     this.num_one_page = a.arr.length
     this.merge()
-    if (!p || p != data.last().arr[0]) {
+    if (p != data.last().arr[0]) {
       this.save()
       return true
     }
@@ -220,7 +243,7 @@ class C1 {
     this.save()
   }
   save() {
-    GM_setValue(this.typeid, JSON.stringify(this.data))
+    GM_setValue(id2key(this.fid, this.typeid), JSON.stringify(this.data))
   }
   async nextOne() {
     if (this.data.length === 0) await this.refresh()
@@ -230,11 +253,11 @@ class C1 {
     return a[this.i1++]
   }
 }
-const li = a => {
+const li = (a) => {
   const { title, img, magnet, torrent } = a
   return `
     <li>
-      ${img.map(i => `<img src="${i}"/>`).join('')}
+      ${img.map((i) => `<img src="${i}"/>`).join('')}
       <div class="title">
         <span>${title}</span>
         <span>
@@ -246,65 +269,66 @@ const li = a => {
   `
 }
 const addTag = () => {
+  let ts = tags
   let t = GM_getValue('tag')
-  t = t ? JSON.parse(t) : tag
+  t = t ? JSON.parse(t) : [Object.keys(ts)[0]]
   const n = document.querySelector('#tag')
-  const a = tag
-    .map(i => `<span ${t.includes(i) ? '' : 'class=disable'}>${i}</span>`)
+  const a = Object.keys(ts)
+    .map((i) => `<span ${t.includes(i) ? '' : 'class=disable'}>${i}</span>`)
     .join('')
   requestAnimationFrame(() => (n.innerHTML = a))
-  n.addEventListener('click', e => {
+  n.addEventListener('click', (e) => {
     e = e.target
-    if (e.nodeName != 'SPAN') return
-    e.classList.toggle('disable')
-    if (e.classList.contains('disable')) {
-      const i = t.indexOf(e.textContent)
-      if (i !== -1) t.splice(i, 1)
-    } else {
-      t.push(e.textContent)
-    }
+    if (e.nodeName != 'SPAN' || !e.classList.contains('disable')) return
+    e.classList.add('disable')
+    t = [e.textContent]
     GM_setValue('tag', JSON.stringify(t))
     window.location.reload()
   })
-  return t
+  return [t, ts]
 }
 const main = async () => {
-  const tag2id = await cache('tag2id', t2)
-  const t = addTag()
-  const v = t.map(i => new C1(tag2id[i]))
-  const q = await Promise.all(v.map(async i => await i.nextOne()))
+  const [t, ts] = await addTag()
+  const v = []
+  for (let x of t) {
+    x = ts[t]
+    let fid = await cache('fid', t3)
+    fid = fid[x[0]]
+    let typeid = await cache('typeid' + fid, t2, fid)
+    typeid = typeid[x[1]]
+    v.push(new C1(fid, typeid))
+  }
+  const q = await Promise.all(v.map(async (i) => await i.nextOne()))
   const next = async () => {
     let m = 0
-    for (let i = 1; i < q.length; ++i)
-      if (q[i] !== undefined && q[i] > q[m]) m = i
+    for (let i = 1; i < q.length; ++i) if (q[i] !== undefined && q[i] > q[m]) m = i
     if (q[m] === undefined) return
     const r = q[m]
-    q[m] = await v[m].nextOne()
+    while (r === q[m]) {
+      q[m] = await v[m].nextOne()
+    }
     return r
   }
   let end = false
-  const add = async a => {
+  const add = async (a) => {
     if (a === undefined) {
       if (end) return
       end = true
       window.onscroll = null
-      ul.insertAdjacentHTML(
-        'afterend',
-        `<span>total : ${ul.childElementCount}</span>`
-      )
+      ul.insertAdjacentHTML('afterend', `<span>total : ${ul.childElementCount}</span>`)
       const total = document.querySelector('ul+span')
       new MutationObserver(
         () => (total.innerHTML = `total : ${ul.childElementCount}`)
       ).observe(ul, { childList: true })
       return
     }
-    a = await cache(a, t0)
+    a = await cache(a, t0, a)
     if (!a) return
     requestAnimationFrame(() => ul.insertAdjacentHTML('beforeend', li(a)))
   }
   for (let i = 0; i < 3; ++i) await add(await next())
-  const a = await Promise.all(v.map(async i => await i.refresh()))
-  if (a.some(i => i)) window.location.reload()
+  const a = await Promise.all(v.map(async (i) => await i.refresh()))
+  if (a.some((i) => i)) window.location.reload()
   let fetching = false
   window.onscroll = async () => {
     if (
@@ -319,10 +343,10 @@ const main = async () => {
 }
 const init = () => {
   for (let i of GM_listValues()) GM_deleteValue(i)
-  GM_setValue('tag', JSON.stringify([]))
+  GM_setValue('version',GM_info.script.version)
   window.location.reload()
 }
 window.onbeforeunload = () => window.scrollTo(0, 0)
+if (GM_getValue('version')!=GM_info.script.version) init()
 document.querySelector('#clear').onclick = init
-if (!GM_getValue('tag')) init()
 main()
