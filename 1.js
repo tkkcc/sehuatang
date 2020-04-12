@@ -14,13 +14,13 @@
 const tags = {
   fellatiojapan: ['亚洲无码原创', 'fellatiojapan'],
   handjobjapan: ['亚洲无码原创', 'handjobjapan'],
-  uralesbian: ['亚洲无码原创', 'uralesbian'],
-  spermmania: ['亚洲无码原创', 'spermmania'],
-  legsjapan: ['亚洲无码原创', 'legsjapan'],
-  亚洲无码: ['亚洲无码原创', '全部'],
-  亚洲有码: ['亚洲有码原创', '全部'],
+  // uralesbian: ['亚洲无码原创', 'uralesbian'],
+  // spermmania: ['亚洲无码原创', 'spermmania'],
+  // legsjapan: ['亚洲无码原创', 'legsjapan'],
+  无: ['亚洲无码原创', '全部'],
+  有: ['亚洲有码原创', '全部'],
   蚊: ['蚊香社特典版', '全部'],
-  tu: [ '真实自拍','全部'],
+  素: ['素人有码系列', '全部'],
 }
 const head = `<meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -108,14 +108,13 @@ const cache = async (k, f, ...args) => {
   GM_setValue(k, JSON.stringify(a))
   return a
 }
-
 // get one post
 const t0 = async (tid) => {
   const url = `https://www.sehuatang.org/forum.php?mod=viewthread&tid=${tid}`
   let a = await fetch(url)
   a = await a.text()
   a = parseHTML(a)
-  let title = a.querySelector('#thread_subject'),
+  let title = a.querySelector('h1'),
     img = a.querySelectorAll('.pcb img'),
     magnet = a.querySelector('.blockcode li'),
     torrent = a.querySelector('.attnm > a')
@@ -176,12 +175,11 @@ const t3 = async () => {
   }
   return ans
 }
-
-const id2key = (...a) => a.join('_')
 class C1 {
   constructor(fid, typeid) {
     this.num_one_page = Number.MAX_SAFE_INTEGER
-    this.data = JSON.parse(GM_getValue(id2key(fid, typeid), '[]'))
+    this.key = fid + '_' + typeid
+    this.data = JSON.parse(GM_getValue(this.key, '[]'))
     this.fid = fid
     this.typeid = typeid
     this.i1 = 0
@@ -243,7 +241,7 @@ class C1 {
     this.save()
   }
   save() {
-    GM_setValue(id2key(this.fid, this.typeid), JSON.stringify(this.data))
+    GM_setValue(this.key, JSON.stringify(this.data))
   }
   async nextOne() {
     if (this.data.length === 0) await this.refresh()
@@ -343,10 +341,10 @@ const main = async () => {
 }
 const init = () => {
   for (let i of GM_listValues()) GM_deleteValue(i)
-  GM_setValue('version',GM_info.script.version)
+  GM_setValue('version', GM_info.script.version)
   window.location.reload()
 }
 window.onbeforeunload = () => window.scrollTo(0, 0)
-if (GM_getValue('version')!=GM_info.script.version) init()
+if (GM_getValue('version') != GM_info.script.version) init()
 document.querySelector('#clear').onclick = init
 main()
