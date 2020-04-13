@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         sehuatang
-// @version      0.0.7
+// @version      0.0.8
 // @author       bilabila
 // @namespace    https://greasyfork.org/users/164996a
 // @match        https://www.sehuatang.org/404
@@ -143,9 +143,9 @@ const t1 = async (fid, typeid, page) => {
   // check page
   // if (a.querySelector('#fd_page_top strong').textContent != page) return
   a = [
-    ...a.querySelectorAll('#threadlisttableid tbody[id^=normalthread_] th a[href*=tid]'),
+    ...a.querySelectorAll('#threadlisttableid tbody[id^=normalthread_] th a[id^=content_]'),
   ]
-  return a.map((i) => parseInt(/tid=(\d+)/.exec(i.href)[1]))
+  return a.map((i) => parseInt(/content_(\d+)/.exec(i.id)[1]))
 }
 // get type and id of one fid
 const t2 = async (fid) => {
