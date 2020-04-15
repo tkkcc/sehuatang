@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         sehuatang
-// @version      0.0.9
+// @version      0.0.10
 // @author       bilabila
 // @namespace    https://greasyfork.org/users/164996a
 // @match        https://www.sehuatang.org/404
@@ -10,7 +10,7 @@
 // @grant        GM_setValue
 // @grant        GM_listValues
 // @grant        GM_deleteValue
-// @grant        GM_xmlhttpRequestqqq
+// @grant        GM_xmlhttpRequest
 // @connect      www.sehuatang.org
 // @run-at       document-start
 // ==/UserScript==
