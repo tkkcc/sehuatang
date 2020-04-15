@@ -1,14 +1,17 @@
 // ==UserScript==
 // @name         sehuatang
-// @version      0.0.8
+// @version      0.0.9
 // @author       bilabila
 // @namespace    https://greasyfork.org/users/164996a
 // @match        https://www.sehuatang.org/404
+// @match        https://sehuatang.org/404
 // @description  self mode
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_listValues
 // @grant        GM_deleteValue
+// @grant        GM_xmlhttpRequestqqq
+// @connect      www.sehuatang.org
 // @run-at       document-start
 // ==/UserScript==
 const tags = {
@@ -95,6 +98,10 @@ const ul = document.querySelector('ul')
 Array.prototype.last = function (i = 1) {
   return this[this.length - i]
 }
+const gmFetch = (url, method = 'GET') =>
+  new Promise((onload, onerror) => {
+    GM_xmlhttpRequest({ url, method, onload, onerror })
+  })
 const parseHTML = (str) => {
   const tmp = document.implementation.createHTMLDocument()
   tmp.body.innerHTML = str
@@ -111,9 +118,8 @@ const cache = async (k, f, ...args) => {
 // get one post
 const t0 = async (tid) => {
   const url = `https://www.sehuatang.org/forum.php?mod=viewthread&tid=${tid}`
-  let a = await fetch(url)
-  a = await a.text()
-  a = parseHTML(a)
+  let a = await gmFetch(url)
+  a = parseHTML(a.responseText)
   let title = a.querySelector('h1'),
     img = a.querySelectorAll('.pcb img'),
     magnet = a.querySelector('.blockcode li'),
@@ -133,25 +139,25 @@ const t0 = async (tid) => {
 }
 // get one page
 const t1 = async (fid, typeid, page) => {
-  let a = await fetch(
+  let a = await gmFetch(
     `https://www.sehuatang.org/forum.php?mod=forumdisplay&fid=${fid}` +
       (typeid != '0' ? `&filter=typeid&typeid=${typeid}` : '') +
       `&page=${page}`
   )
-  a = await a.text()
-  a = parseHTML(a)
+  a = parseHTML(a.responseText)
   // check page
   // if (a.querySelector('#fd_page_top strong').textContent != page) return
   a = [
-    ...a.querySelectorAll('#threadlisttableid tbody[id^=normalthread_] th a[id^=content_]'),
+    ...a.querySelectorAll(
+      '#threadlisttableid tbody[id^=normalthread_] th a[id^=content_]'
+    ),
   ]
   return a.map((i) => parseInt(/content_(\d+)/.exec(i.id)[1]))
 }
 // get type and id of one fid
 const t2 = async (fid) => {
-  let a = await fetch(`https://www.sehuatang.org/forum.php?mod=forumdisplay&fid=${fid}`)
-  a = await a.text()
-  a = parseHTML(a)
+  let a = await gmFetch(`https://www.sehuatang.org/forum.php?mod=forumdisplay&fid=${fid}`)
+  a = parseHTML(a.responseText)
   a = a.querySelectorAll('#thread_types > li:not([id]) > a')
   a = [...a].filter((i) => i.firstChild)
   const b = { 全部: '0' }
@@ -161,9 +167,8 @@ const t2 = async (fid) => {
 // get all fid and name
 const t3 = async () => {
   const url = `https://www.sehuatang.org/forum.php`
-  let a = await fetch(url)
-  a = await a.text()
-  a = parseHTML(a)
+  let a = await gmFetch(url)
+  a = parseHTML(a.responseText)
   let ans = {}
   for (let b of a.querySelectorAll('a')) {
     if (b.childElementCount != 0) continue
