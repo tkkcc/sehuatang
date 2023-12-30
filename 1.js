@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         sehuatang
-// @version      0.0.11
+// @version      0.0.12
 // @author       bilabila
 // @namespace    https://greasyfork.org/users/164996a
 // @match        https://www.sehuatang.org/404
@@ -17,13 +17,12 @@
 const tags = {
   fellatiojapan: ['亚洲无码原创', 'fellatiojapan'],
   handjobjapan: ['亚洲无码原创', 'handjobjapan'],
-  // uralesbian: ['亚洲无码原创', 'uralesbian'],
+  uralesbian: ['亚洲无码原创', 'uralesbian'],
   spermmania: ['亚洲无码原创', 'spermmania'],
-  // legsjapan: ['亚洲无码原创', 'legsjapan'],
+  legsjapan: ['亚洲无码原创', 'legsjapan'],
   无: ['亚洲无码原创', '全部'],
   有: ['亚洲有码原创', '全部'],
-  蚊: ['蚊香社特典版', '全部'],
-  素: ['素人有码系列', '全部']
+  素: ['素人有码系列', '全部'],
 }
 const head = `<meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -100,9 +99,9 @@ Array.prototype.last = function (i = 1) {
 }
 const gmFetch = (url, method = 'GET') =>
   new Promise((onload, onerror) => {
-    GM_xmlhttpRequest({url, method, onload, onerror})
+    GM_xmlhttpRequest({ url, method, onload, onerror, cookie: '_safe=' })
   })
-const parseHTML = str => {
+const parseHTML = (str) => {
   const tmp = document.implementation.createHTMLDocument()
   tmp.body.innerHTML = str
   return tmp
@@ -116,7 +115,7 @@ const cache = async (k, f, ...args) => {
   return a
 }
 // get one post
-const t0 = async tid => {
+const fetchOnePost = async (tid) => {
   const url = `https://www.sehuatang.org/forum.php?mod=viewthread&tid=${tid}`
   let a = await gmFetch(url)
   a = parseHTML(a.responseText)
@@ -126,19 +125,25 @@ const t0 = async tid => {
     torrent = a.querySelector('.attnm > a')
 
   title = title ? title.textContent : ''
-  const img_bl = ['https://cdn.jsdelivr.net/gh/hishis/forum-master/public/images/patch.gif']
-  img = img ? [...img].map(i => i.getAttribute('file')).filter(i => i && !img_bl.includes(i)) : []
+  const img_bl = [
+    'https://cdn.jsdelivr.net/gh/hishis/forum-master/public/images/patch.gif',
+  ]
+  img = img
+    ? [...img]
+        .map((i) => i.getAttribute('file'))
+        .filter((i) => i && !img_bl.includes(i))
+    : []
   magnet = magnet ? magnet.textContent : ''
   torrent = torrent ? torrent.href : ''
-  a = {img, magnet, torrent, title}
+  a = { img, magnet, torrent, title }
   return a
 }
 // get one page
-const t1 = async (fid, typeid, page) => {
+const fetchOnePage = async (fid, typeid, page) => {
   let a = await gmFetch(
     `https://www.sehuatang.org/forum.php?mod=forumdisplay&fid=${fid}` +
-    (typeid != '0' ? `&filter=typeid&typeid=${typeid}` : '') +
-    `&page=${page}`
+      (typeid != '0' ? `&filter=typeid&typeid=${typeid}` : '') +
+      `&page=${page}`
   )
   a = parseHTML(a.responseText)
   // check page
@@ -146,26 +151,26 @@ const t1 = async (fid, typeid, page) => {
   a = [
     ...a.querySelectorAll(
       '#threadlisttableid tbody[id^=normalthread_] th a[id^=content_]'
-    )
+    ),
   ]
-  return a.map(i => parseInt(/content_(\d+)/.exec(i.id)[1]))
+  return a.map((i) => parseInt(/content_(\d+)/.exec(i.id)[1]))
 }
 // get type and id of one fid
-const t2 = async fid => {
+const fetchTypeId = async (fid) => {
   let a = await gmFetch(
     `https://www.sehuatang.org/forum.php?mod=forumdisplay&fid=${fid}`
   )
   a = parseHTML(a.responseText)
   a = a.querySelectorAll('#thread_types > li:not([id]) > a')
-  a = [...a].filter(i => i.firstChild)
-  const b = {全部: '0'}
-    ;[...a].forEach(
-      i => (b[i.firstChild.textContent] = /typeid=(\d+)/.exec(i.href)[1])
-    )
+  a = [...a].filter((i) => i.firstChild)
+  const b = { 全部: '0' }
+  ;[...a].forEach(
+    (i) => (b[i.firstChild.textContent] = /typeid=(\d+)/.exec(i.href)[1])
+  )
   return b
 }
 // get all fid and name
-const t3 = async () => {
+const fetchFidName = async () => {
   const url = `https://www.sehuatang.org/forum.php`
   let a = await gmFetch(url)
   a = parseHTML(a.responseText)
@@ -180,7 +185,7 @@ const t3 = async () => {
   }
   return ans
 }
-class C1 {
+class Bot {
   constructor(fid, typeid) {
     this.num_one_page = Number.MAX_SAFE_INTEGER
     this.key = fid + '_' + typeid
@@ -190,7 +195,7 @@ class C1 {
     this.i1 = 0
   }
   async get(page) {
-    return await t1(this.fid, this.typeid, page)
+    return await fetchOnePage(this.fid, this.typeid, page)
   }
   async more(a) {
     if (a.page === -1) return
@@ -228,7 +233,7 @@ class C1 {
     const p = data.last() && data.last().arr[0]
     data.push({
       arr: undefined,
-      page: 0
+      page: 0,
     })
     const a = data.last()
     a.arr = await this.get(++a.page)
@@ -257,11 +262,11 @@ class C1 {
     return a[this.i1++]
   }
 }
-const li = a => {
-  const {title, img, magnet, torrent} = a
+const li = (a) => {
+  const { title, img, magnet, torrent } = a
   return `
     <li>
-      ${img.map(i => `<img src="${i}"/>`).join('')}
+      ${img.map((i) => `<img src="${i}"/>`).join('')}
       <div class="title">
         <span>${title}</span>
         <span>
@@ -278,10 +283,10 @@ const addTag = () => {
   t = t ? JSON.parse(t) : [Object.keys(ts)[0]]
   const n = document.querySelector('#tag')
   const a = Object.keys(ts)
-    .map(i => `<span ${t.includes(i) ? '' : 'class=disable'}>${i}</span>`)
+    .map((i) => `<span ${t.includes(i) ? '' : 'class=disable'}>${i}</span>`)
     .join('')
   requestAnimationFrame(() => (n.innerHTML = a))
-  n.addEventListener('click', e => {
+  n.addEventListener('click', (e) => {
     e = e.target
     if (e.nodeName != 'SPAN' || !e.classList.contains('disable')) return
     e.classList.add('disable')
@@ -292,17 +297,17 @@ const addTag = () => {
   return [t, ts]
 }
 const main = async () => {
-  const [t, ts] = await addTag()
+  const [t, ts] = addTag()
   const v = []
   for (let x of t) {
     x = ts[t]
-    let fid = await cache('fid', t3)
+    let fid = await cache('fid', fetchFidName)
     fid = fid[x[0]]
-    let typeid = await cache('typeid' + fid, t2, fid)
+    let typeid = await cache('typeid' + fid, fetchTypeId, fid)
     typeid = typeid[x[1]]
-    v.push(new C1(fid, typeid))
+    v.push(new Bot(fid, typeid))
   }
-  const q = await Promise.all(v.map(async i => await i.nextOne()))
+  const q = await Promise.all(v.map(async (i) => await i.nextOne()))
   const next = async () => {
     let m = 0
     for (let i = 1; i < q.length; ++i)
@@ -314,11 +319,11 @@ const main = async () => {
     }
     return r
   }
-  let end = false
-  const add = async a => {
+  let isEnd = false
+  const add = async (a) => {
     if (a === undefined) {
-      if (end) return
-      end = true
+      if (isEnd) return
+      isEnd = true
       window.onscroll = null
       ul.insertAdjacentHTML(
         'afterend',
@@ -327,25 +332,25 @@ const main = async () => {
       const total = document.querySelector('ul+span')
       new MutationObserver(
         () => (total.innerHTML = `total : ${ul.childElementCount}`)
-      ).observe(ul, {childList: true})
+      ).observe(ul, { childList: true })
       return
     }
-    a = await cache(a, t0, a)
+    a = await cache(a, fetchOnePost, a)
     if (!a) return
     requestAnimationFrame(() => ul.insertAdjacentHTML('beforeend', li(a)))
   }
   for (let i = 0; i < 3; ++i) await add(await next())
-  const a = await Promise.all(v.map(async i => await i.refresh()))
-  if (a.some(i => i)) window.location.reload()
-  let fetching = false
+  const a = await Promise.all(v.map(async (i) => await i.refresh()))
+  if (a.some((i) => i)) window.location.reload()
+  let isFetching = false
   window.onscroll = async () => {
     if (
-      !fetching &&
+      !isFetching &&
       10 * window.innerHeight + window.scrollY >= document.body.offsetHeight
     ) {
-      fetching = true
+      isFetching = true
       await add(await next())
-      fetching = false
+      isFetching = false
     }
   }
 }
